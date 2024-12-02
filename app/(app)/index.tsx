@@ -1,7 +1,11 @@
 import { useAuth } from "@/contexts/auth.context";
-import { useGetBooksQuery } from "@/services/books.service";
+import {
+  CatalogBook,
+  DetailedBook,
+  useGetBooksQuery,
+} from "@/services/books.service";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,61 +17,56 @@ import {
   TouchableOpacity,
   useColorScheme,
 } from "react-native";
-
-const booksData = [
-  {
-    id: "1",
-    title: "El Quijote",
-    author: "Miguel de Cervantes",
-    imageUrl: "https://example.com/quijote.jpg",
-  },
-  {
-    id: "2",
-    title: "Cien años de soledad",
-    author: "Gabriel García Márquez",
-    imageUrl: "https://example.com/cien-anos.jpg",
-  },
-  {
-    id: "3",
-    title: "1984",
-    author: "George Orwell",
-    imageUrl: "https://example.com/1984.jpg",
-  },
-  {
-    id: "4",
-    title: "El principito",
-    author: "Antoine de Saint-Exupéry",
-    imageUrl: "https://example.com/principito.jpg",
-  },
-  {
-    id: "5",
-    title: "Rayuela",
-    author: "Julio Cortázar",
-    imageUrl: "https://example.com/rayuela.jpg",
-  },
-];
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
 
 const BookCatalog = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [books, setBooks] = useState(booksData);
   const colorScheme = useColorScheme();
   const { logout } = useAuth();
   const isDarkMode = colorScheme === "dark";
   const { data } = useGetBooksQuery();
   console.log(data);
 
-  const handleSearch = (text: string) => {
-    setSearchQuery(text);
-    const filteredBooks = booksData.filter(
-      (book) =>
-        book.title.toLowerCase().includes(text.toLowerCase()) ||
-        book.author.toLowerCase().includes(text.toLowerCase())
-    );
-    setBooks(filteredBooks);
+  const [books, setBooks] = useState<DetailedBook[]>([]);
+
+  const saveBooksToStorage = async (books: DetailedBook[]) => {
+    try {
+      await AsyncStorage.setItem("books", JSON.stringify(books));
+    } catch (error) {
+      console.error("Error saving books to storage", error);
+    }
   };
 
+  const loadBooksFromStorage = async () => {
+    try {
+      const storedBooks = await AsyncStorage.getItem("books");
+      if (storedBooks) {
+        setBooks(JSON.parse(storedBooks));
+      }
+    } catch (error) {
+      console.error("Error loading books from storage", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const state = await NetInfo.fetch();
+      console.log("state ->", state);
+      if (state.isConnected) {
+        if (data) {
+          setBooks(data);
+          saveBooksToStorage(data);
+        }
+      } else {
+        loadBooksFromStorage();
+      }
+    };
+
+    fetchData();
+  }, [data]);
+
   const handleBookPress = (id: string) => {
-    router.replace(`/book`);
+    router.replace(`/book?id=${id}`);
   };
 
   const handleLogout = () => {
@@ -75,15 +74,25 @@ const BookCatalog = () => {
     console.log("Cerrar sesión");
   };
 
-  const renderBookItem = ({ item }: { item: any }) => (
+  const renderBookItem = ({ item }: { item: DetailedBook }) => (
     <TouchableOpacity
-      onPress={() => handleBookPress(item.id)}
+      onPress={() => handleBookPress(item.id.toString())}
       style={styles.bookItem}
     >
       <Image source={{ uri: item.imageUrl }} style={styles.bookImage} />
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle}>{item.title}</Text>
         <Text style={styles.bookAuthor}>{item.author}</Text>
+        <View style={styles.descriptionContainer}>
+          <Text
+            style={styles.bookDescription}
+            numberOfLines={2}
+            ellipsizeMode="tail"
+          >
+            {item.description}
+          </Text>
+        </View>
+        <Text style={styles.bookPages}>{item.pages.length} páginas</Text>
       </View>
     </TouchableOpacity>
   );
@@ -105,17 +114,10 @@ const BookCatalog = () => {
       <Text style={[styles.header, isDarkMode && styles.headerDark]}>
         Catálogo de Libros
       </Text>
-      <TextInput
-        style={[styles.searchInput, isDarkMode && styles.searchInputDark]}
-        placeholder="Buscar libros..."
-        placeholderTextColor={isDarkMode ? "#ccc" : "#888"}
-        value={searchQuery}
-        onChangeText={handleSearch}
-      />
       <FlatList
         data={books}
         renderItem={renderBookItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.bookList}
       />
     </SafeAreaView>
@@ -176,6 +178,7 @@ const styles = StyleSheet.create({
   bookInfo: {
     marginLeft: 15,
     justifyContent: "center",
+    flex: 1,
   },
   bookTitle: {
     fontSize: 18,
@@ -185,6 +188,21 @@ const styles = StyleSheet.create({
   bookAuthor: {
     fontSize: 14,
     color: "gray",
+    marginBottom: 5,
+  },
+  descriptionContainer: {
+    width: "100%",
+  },
+  bookDescription: {
+    fontSize: 14,
+    color: "gray",
+    marginBottom: 5,
+    flexShrink: 1,
+  },
+  bookPages: {
+    fontSize: 14,
+    color: "gray",
+    marginBottom: 5,
   },
   headerBar: {
     flexDirection: "row",

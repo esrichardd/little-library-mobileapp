@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-const BASE_URL = process.env.BASE_API_URL;
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 type User = {
   id: number;

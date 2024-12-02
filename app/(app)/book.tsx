@@ -1,5 +1,6 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { DetailedBook, useGetBookByIdQuery } from "@/services/books.service";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,23 +9,41 @@ import {
   SafeAreaView,
   Dimensions,
 } from "react-native";
-
-// Datos de muestra para el libro
-const bookContent = {
-  title: "Animal Farm",
-  author: "George Orwell",
-  pages: [
-    "In the heart of Eldoria lay the ancient forest of Mistralwood, where the trees whispered secrets to those who dared to listen. Arwen, a young apprentice mage, wandered its winding paths, her cloak fluttering behind her. The forest was alive with the sounds of chirping birds and rustling leaves, but an eerie silence settled as she approached the glimmering pool said to house the fabled crystal of Aelora.",
-    "Página 2: Contenido del libro...",
-    "Página 3: Contenido del libro...",
-    "Página 4: Contenido del libro...",
-    "Página 5: Contenido del libro...",
-  ],
-};
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
 
 const BookReader = () => {
   const [currentPage, setCurrentPage] = useState(0);
-  const totalPages = bookContent.pages.length;
+  const [bookData, setBookData] = useState<DetailedBook | undefined>(undefined);
+  const { id } = useLocalSearchParams();
+  const { data, isLoading } = useGetBookByIdQuery(Number(id));
+
+  useEffect(() => {
+    const fetchBookData = async () => {
+      const netInfo = await NetInfo.fetch();
+      if (netInfo.isConnected) {
+        setBookData(data);
+        if (data) {
+          await AsyncStorage.setItem(`book_${id}`, JSON.stringify(data));
+        }
+      } else {
+        const storedBooks = await AsyncStorage.getItem("books");
+        if (storedBooks) {
+          const booksArray = JSON.parse(storedBooks);
+          const foundBook = booksArray.find(
+            (book: DetailedBook) => book.id === Number(id)
+          );
+          if (foundBook) {
+            setBookData(foundBook);
+          }
+        }
+      }
+    };
+
+    fetchBookData();
+  }, [data, id]);
+
+  const totalPages = bookData?.pages.length || 0;
 
   const goToNextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -42,6 +61,10 @@ const BookReader = () => {
     router.replace("/(app)");
   };
 
+  if (isLoading) {
+    return <Text>Loading...</Text>;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
@@ -53,14 +76,12 @@ const BookReader = () => {
       </TouchableOpacity>
       <View style={styles.readerContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>{bookContent.title}</Text>
-          <Text style={styles.author}>{bookContent.author}</Text>
+          <Text style={styles.title}>{bookData?.title}</Text>
+          <Text style={styles.author}>{bookData?.author}</Text>
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.pageContent}>
-            {bookContent.pages[currentPage]}
-          </Text>
+          <Text style={styles.pageContent}>{bookData?.pages[currentPage]}</Text>
         </View>
 
         <View style={styles.navigation}>
