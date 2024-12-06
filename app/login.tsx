@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { useAuth } from "@/contexts/auth.context";
+import { useAuth } from "@/application/context";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -16,7 +16,7 @@ export default function LoginScreen() {
       await login(email, password);
       router.replace("/(app)");
     } catch (error) {
-      setError("Invalid credentials");
+      setError("Credenciales inválidas, por favor intente de nuevo.");
     }
   };
 

@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/auth.context";
+import { useAuth } from "@/application/context";
 import {
   CatalogBook,
   DetailedBook,

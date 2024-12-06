@@ -1,7 +1,7 @@
 import { Slot } from "expo-router";
-import { AuthProvider } from "../contexts/auth.context";
 import { Provider } from "react-redux";
 import { store } from "@/services/store";
+import { AuthProvider } from "@/application/context";
 
 export default function Root() {
   return (
