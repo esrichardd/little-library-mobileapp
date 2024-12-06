@@ -12,7 +12,6 @@ import {
   FlatList,
   Image,
   StyleSheet,
-  TextInput,
   SafeAreaView,
   TouchableOpacity,
   useColorScheme,
