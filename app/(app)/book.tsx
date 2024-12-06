@@ -1,4 +1,4 @@
-import { DetailedBook, useGetBookByIdQuery } from "@/services/books.service";
+import { useGetBookByIdQuery } from "@/infraestructure/repositories";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
+import { DetailedBook } from "@/domain/models";
 
 const BookReader = () => {
   const [currentPage, setCurrentPage] = useState(0);

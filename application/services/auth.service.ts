@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { User } from "@/domain/models";
-import { useLoginMutation } from "@/infraestructure/repository";
+import { useLoginMutation } from "@/infraestructure/repositories";
 
 export const useAuthService = () => {
   const [loginMutation] = useLoginMutation();
